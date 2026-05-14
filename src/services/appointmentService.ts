@@ -247,7 +247,13 @@ const MOCK_DATA: Appointment[] = [
 
 export async function fetchAppointments(): Promise<Appointment[]> {
   try {
-    const response = await axios.get('/api/appointments');
+    const response = await axios.get(`/api/appointments?t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
     const csvData = response.data;
     
     const parsed: Appointment[] = await new Promise((resolve, reject) => {

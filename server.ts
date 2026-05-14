@@ -29,20 +29,32 @@ initLogos();
 
 // API Route to fetch spreadsheet data
 app.get("/api/appointments", async (req, res) => {
+  console.log(`[API] Fetching appointments from: ${CSV_URL}`);
   try {
     const response = await axios.get(CSV_URL, {
-      timeout: 10000,
+      timeout: 15000,
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
         'Expires': '0',
       }
     });
+
+    if (!response.data) {
+      console.error("[API] Spreadsheet returned empty data");
+      return res.status(500).json({ error: "Planilha retornou dados vazios." });
+    }
+
+    console.log(`[API] Success. Data length: ${response.data.length}`);
     res.header("Content-Type", "text/csv");
+    res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.send(response.data);
-  } catch (error) {
-    console.error("Error fetching data from Google Sheets:", error);
-    res.status(500).json({ error: "Erro ao buscar dados da planilha." });
+  } catch (error: any) {
+    console.error("[API] Error fetching data from Google Sheets:", error.message);
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: "Timeout ao buscar dados da planilha." });
+    }
+    res.status(500).json({ error: "Erro ao buscar dados da planilha: " + error.message });
   }
 });
 
