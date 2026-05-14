@@ -1,0 +1,8 @@
+{
+  "name": "Painel 4º Salão Imobiliário Nogueira",
+  "description": "Dashboard para exibição em TVs durante o 4º Salão Imobiliário Nogueira, exibindo agendamentos em tempo real sincronizados com Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
