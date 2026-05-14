@@ -1,83 +1,9 @@
 import express from "express";
 import path from "path";
-import axios from "axios";
-import fs from "fs/promises";
 import { createServer as createViteServer } from "vite";
+import app from "./api/index.js";
 
-const app = express();
 const PORT = 3000;
-
-app.use(express.json());
-
-const LOGOS_FILE = path.join(process.cwd(), 'logos.json');
-const SHEET_ID = "1KBW2Qyr9g4exPecYvj7pfde5hmZf3XApytNSInWLFZI";
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
-
-// Initialize logos file if it doesn't exist
-async function initLogos() {
-  try {
-    await fs.access(LOGOS_FILE);
-  } catch {
-    try {
-      await fs.writeFile(LOGOS_FILE, JSON.stringify({}));
-    } catch (e) {
-      console.warn("Could not write initial logos.json (this is expected on some read-only environments like Vercel)");
-    }
-  }
-}
-initLogos();
-
-// API Route to fetch spreadsheet data
-app.get("/api/appointments", async (req, res) => {
-  console.log(`[API] Fetching appointments from: ${CSV_URL}`);
-  try {
-    const response = await axios.get(CSV_URL, {
-      timeout: 15000,
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      }
-    });
-
-    if (!response.data) {
-      console.error("[API] Spreadsheet returned empty data");
-      return res.status(500).json({ error: "Planilha retornou dados vazios." });
-    }
-
-    console.log(`[API] Success. Data length: ${response.data.length}`);
-    res.header("Content-Type", "text/csv");
-    res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.send(response.data);
-  } catch (error: any) {
-    console.error("[API] Error fetching data from Google Sheets:", error.message);
-    if (error.code === 'ECONNABORTED') {
-      return res.status(504).json({ error: "Timeout ao buscar dados da planilha." });
-    }
-    res.status(500).json({ error: "Erro ao buscar dados da planilha: " + error.message });
-  }
-});
-
-// API to get logo mappings
-app.get("/api/logos", async (req, res) => {
-  try {
-    const data = await fs.readFile(LOGOS_FILE, 'utf-8');
-    res.json(JSON.parse(data));
-  } catch (error) {
-    res.json({});
-  }
-});
-
-// API to update logo mappings
-app.post("/api/logos", async (req, res) => {
-  try {
-    const logos = req.body;
-    await fs.writeFile(LOGOS_FILE, JSON.stringify(logos, null, 2));
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao salvar logos. Nota: A Vercel não suporta gravação persistente de arquivos." });
-  }
-});
 
 async function startServer() {
   // Vite middleware for development
@@ -89,7 +15,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath)); // Ensure express is available
     app.get('*', (req, res) => {
       if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: "API route not found" });
@@ -98,16 +24,13 @@ async function startServer() {
     });
   }
 
-  if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  // Only start listening if NOT on Vercel or if in development
+  if (!process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   }
 }
 
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-  startServer();
-}
-
-export default app;
+startServer();
 
