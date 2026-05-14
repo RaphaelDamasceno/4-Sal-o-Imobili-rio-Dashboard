@@ -37,11 +37,19 @@ app.get("/api/appointments", async (req, res) => {
       }
     });
 
-    if (!response.data) {
-      return res.status(500).json({ error: "Planilha retornou dados vazios." });
+    if (!response.data || typeof response.data !== 'string') {
+      console.error("[API] Invalid spreadsheet response");
+      return res.status(500).json({ error: "Planilha retornou dados inválidos." });
     }
 
-    res.header("Content-Type", "text/csv");
+    // Double check if it's not HTML
+    if (response.data.trim().startsWith('<!DOCTYPE') || response.data.trim().startsWith('<html')) {
+        console.error("[API] Received HTML instead of CSV from spreadsheet URL");
+        return res.status(500).json({ error: "Erro na fonte de dados (retornou HTML)." });
+    }
+
+    console.log(`[API] Success. Data length: ${response.data.length}`);
+    res.header("Content-Type", "text/csv; charset=utf-8");
     res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.send(response.data);
   } catch (error: any) {
@@ -51,7 +59,7 @@ app.get("/api/appointments", async (req, res) => {
 });
 
 // API to get logo mappings
-app.get("/api/logos", async (req, res) => {
+app.get(["/api/logos", "/logos"], async (req, res) => {
   try {
     const data = await fs.readFile(LOGOS_FILE, 'utf-8');
     res.json(JSON.parse(data));
@@ -61,7 +69,7 @@ app.get("/api/logos", async (req, res) => {
 });
 
 // API to update logo mappings
-app.post("/api/logos", async (req, res) => {
+app.post(["/api/logos", "/logos"], async (req, res) => {
   try {
     const logos = req.body;
     await fs.writeFile(LOGOS_FILE, JSON.stringify(logos, null, 2));

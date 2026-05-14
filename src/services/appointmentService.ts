@@ -255,6 +255,12 @@ export async function fetchAppointments(): Promise<Appointment[]> {
       }
     });
     const csvData = response.data;
+
+    // Check if we accidentally got an HTML page (Vercel SPA fallback)
+    if (typeof csvData === 'string' && (csvData.trim().startsWith('<!DOCTYPE') || csvData.trim().startsWith('<html'))) {
+      console.warn('Received HTML instead of CSV, likely a routing issue. Using mock data.');
+      return MOCK_DATA;
+    }
     
     const parsed: Appointment[] = await new Promise((resolve, reject) => {
       Papa.parse(csvData, {

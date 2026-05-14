@@ -381,6 +381,20 @@ const NewAppointmentNotification = ({ appointment, onClose, logos }: { appointme
   );
 };
 
+const parseDate = (dateStr: string) => {
+  if (!dateStr) return new Date(0);
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) return d;
+  
+  // Handle DD/MM/YYYY HH:mm:ss (Common in Brazil/Google Sheets)
+  const match = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})(\s*(\d{2})?:?(\d{2})?:?(\d{2})?)?$/);
+  if (match) {
+    const [_, day, month, year, timePart = '', hour = '0', min = '0', sec = '0'] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min), parseInt(sec));
+  }
+  return new Date(0);
+};
+
 export default function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -431,9 +445,15 @@ export default function App() {
   
   const latestAppointment = useMemo(() => {
     if (appointments.length === 0) return null;
-    return [...appointments].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    )[0];
+    const valid = appointments.filter(a => a.clientName && !a.clientName.includes('<'));
+    if (valid.length === 0) return null;
+
+    return [...valid].sort((a, b) => {
+      const timeA = parseDate(a.timestamp).getTime();
+      const timeB = parseDate(b.timestamp).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+      return appointments.indexOf(b) - appointments.indexOf(a);
+    })[0];
   }, [appointments]);
   
   const constructorStats = useMemo(() => {
@@ -471,19 +491,50 @@ export default function App() {
 
   useEffect(() => {
     if (appointments.length > 0) {
-      const sorted = [...appointments].sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      // 1. Filter out garbage data (like HTML tags parsed as CSV)
+      const validAppointments = appointments.filter(a => 
+        a.clientName && 
+        !a.clientName.includes('<') && 
+        !a.clientName.includes('meta name=') &&
+        !a.clientName.includes('initial-scale')
       );
+
+      if (validAppointments.length === 0) return;
+
+      // 2. Robust sorting: by Date, then by original array position (implicitly)
+      // We assume the LATEST ones are usually at the end of the array if dates are identical/missing
+      const sorted = [...validAppointments].sort((a, b) => {
+        const timeA = parseDate(a.timestamp).getTime();
+        const timeB = parseDate(b.timestamp).getTime();
+        
+        if (timeA !== timeB) return timeB - timeA;
+        
+        // If dates are identical or invalid, use their position in the ORIGINAL array
+        // (Items later in the array are assumed newer)
+        return appointments.indexOf(b) - appointments.indexOf(a);
+      });
+      
       const latest = sorted[0];
-      const latestId = `${latest.timestamp}-${latest.clientName}`;
+      // Generate a unique ID for this specific appointment
+      const latestId = `${latest.timestamp}-${latest.clientName}-${latest.constructor}-${latest.brokerName}`;
+
+      console.log(`[Notification Check] Count: ${validAppointments.length} | Latest: ${latest.clientName} | Last Seen: ${lastSeenId.current}`);
 
       if (isInitialLoad.current) {
-        // On first load, just keep track of the latest ID to avoid spamming past entries
         lastSeenId.current = latestId;
         isInitialLoad.current = false;
-      } else if (lastSeenId.current && latestId !== lastSeenId.current) {
-        // If we see a new ID that we haven't seen before in this session, show it!
-        setCurrentNotification(latest);
+        console.log('[Notification] Initial state set');
+      } else if (latestId !== lastSeenId.current) {
+        console.log(`[Notification] NEW APPOINTMENT DETECTED: ${latest.clientName}`);
+        
+        // Use a functional update or a slight delay to ensure key change triggers animation
+        setCurrentNotification(prev => {
+          if (prev && `${prev.timestamp}-${prev.clientName}-${prev.constructor}-${prev.brokerName}` === latestId) {
+             return prev; 
+          }
+          return latest;
+        });
+        
         lastSeenId.current = latestId;
       }
     }
