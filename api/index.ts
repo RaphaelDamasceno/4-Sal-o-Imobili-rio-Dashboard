@@ -12,13 +12,14 @@ const LOGOS_FILE = path.join(process.cwd(), 'logos.json');
 
 // Initialize logos file if it doesn't exist
 async function initLogos() {
+  if (process.env.VERCEL) return;
   try {
     await fs.access(LOGOS_FILE);
   } catch {
     try {
       await fs.writeFile(LOGOS_FILE, JSON.stringify({}));
     } catch (e) {
-      console.warn("Could not write initial logos.json (this is expected on Vercel)");
+      console.warn("Could not write initial logos.json");
     }
   }
 }
@@ -70,12 +71,18 @@ app.get(["/api/logos", "/logos"], async (req, res) => {
 
 // API to update logo mappings
 app.post(["/api/logos", "/logos"], async (req, res) => {
+  if (process.env.VERCEL) {
+    return res.status(202).json({ 
+      success: true, 
+      warning: "Fallback local ativado (Vercel read-only)" 
+    });
+  }
   try {
     const logos = req.body;
     await fs.writeFile(LOGOS_FILE, JSON.stringify(logos, null, 2));
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: "Erro ao salvar logos. Nota: A Vercel não suporta gravação persistente de arquivos." });
+    res.status(500).json({ error: "Erro ao salvar arquivo de logos." });
   }
 });
 
