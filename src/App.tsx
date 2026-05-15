@@ -441,6 +441,9 @@ export default function App() {
   }, []);
 
   const totalAppointments = appointments.length;
+  const validatedAppointmentsCount = useMemo(() => 
+    appointments.filter(a => a.isValidated).length, 
+  [appointments]);
   
   const latestAppointment = useMemo(() => {
     if (appointments.length === 0) return null;
@@ -719,30 +722,50 @@ export default function App() {
           <div className="col-span-1 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8 h-auto lg:h-full">
             
             {/* 1. Total Appointments Card */}
-            <div className="feature-card p-6 lg:p-8 flex flex-col bg-white group transition-all duration-500 min-h-[250px] hover:border-brand-navy/10">
+            <div className="feature-card p-6 lg:p-8 flex flex-col bg-white group transition-all duration-500 min-h-[250px] hover:border-brand-navy/10 overflow-hidden">
               <CardHeading title="Desempenho Geral" icon={Calendar} />
-              <div className="flex-1 flex items-center justify-center gap-6 lg:gap-12">
-                 <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+              <div className="flex-1 flex items-center justify-around gap-4">
+                 
+                 <div className="flex flex-col items-center">
                     <motion.p 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-green-text mb-3 font-sans"
+                      className="text-[12px] lg:text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-text-dim mb-2 font-sans text-center"
                     >
-                      Total de Agendamentos
+                      Total
                     </motion.p>
-                    <div className="flex items-baseline gap-4 lg:gap-6">
-                       <motion.h1 
-                         initial={{ opacity: 0, x: -20 }}
-                         animate={{ opacity: 1, x: 0 }}
-                         transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-                         className="text-8xl lg:text-[10rem] font-black tracking-tight tabular-nums text-brand-navy font-display"
-                       >
-                         {totalAppointments.toLocaleString('pt-BR')}
-                       </motion.h1>
-
-                    </div>
+                    <motion.h1 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+                      className="text-6xl lg:text-8xl font-black tracking-tighter tabular-nums text-brand-navy font-display"
+                    >
+                      {totalAppointments.toLocaleString('pt-BR')}
+                    </motion.h1>
                  </div>
+
+                 <div className="w-px h-24 bg-brand-navy/10" />
+
+                 <div className="flex flex-col items-center">
+                    <motion.p 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-[12px] lg:text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-green-text mb-2 font-sans text-center"
+                    >
+                      Validados
+                    </motion.p>
+                    <motion.h1 
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                      className="text-6xl lg:text-8xl font-black tracking-tighter tabular-nums text-brand-green font-display"
+                    >
+                      {validatedAppointmentsCount.toLocaleString('pt-BR')}
+                    </motion.h1>
+                 </div>
+
               </div>
             </div>
 
