@@ -4,7 +4,6 @@ import {
   Building2, 
   UserCheck,
   RefreshCw,
-  TrendingUp,
   Trophy,
   Calendar,
   User,
@@ -741,17 +740,7 @@ export default function App() {
                        >
                          {totalAppointments.toLocaleString('pt-BR')}
                        </motion.h1>
-                       <motion.div 
-                         initial={{ opacity: 0, y: 20 }}
-                         animate={{ opacity: 1, y: 0 }}
-                         transition={{ delay: 0.5 }}
-                         className="flex flex-col pb-2 lg:pb-4"
-                       >
-                          <span className="flex items-center gap-1 lg:gap-2 text-brand-green-text font-black text-3xl lg:text-5xl font-display">
-                             <TrendingUp size={28} className="lg:size-10" /> 18%
-                          </span>
-                          <span className="text-[12px] lg:text-[13px] font-black text-brand-text-dim uppercase tracking-widest font-sans">Crescimento</span>
-                       </motion.div>
+
                     </div>
                  </div>
               </div>
