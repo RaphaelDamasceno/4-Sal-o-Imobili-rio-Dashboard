@@ -219,7 +219,6 @@ const RankingItem: React.FC<RankingItemProps> = ({ rank, name, count, percent, i
         <span className="text-3xl font-black">{count}</span>
         <ArrowUpRight size={12} className="text-brand-green" />
       </div>
-      <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider font-sans">{percent}% da Meta</span>
     </div>
   </motion.div>
 );
