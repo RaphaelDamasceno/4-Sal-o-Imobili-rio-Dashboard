@@ -9,6 +9,11 @@ const DEFAULT_LOGOS: Record<string, string> = {
   'BORA': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6OrgSsvn6YW82tjdVao5s_I-2YqPhNEK8OA&s',
   'MRV ENGENHARIA': 'https://maraalcaineimoveis.com.br/wp-content/uploads/2021/09/mrv-engenharia-sao-jose-do-rio-preto-sp.jpg',
   'VL CONSTRUTORA': 'https://media.glassdoor.com/sqll/2710128/vl-construtora-squarelogo-1643286816827.png',
+  'TENÓRIO SIMÕES': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTp8D0qMcC1zw35N4OC2tdJ9iKnbQg6ySeO_g&s',
+  'NASCIMENTO': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSjRoBUYMt7B7DrNYlo3mXgiekUevVcObnlrg&s',
+  'STUPP': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTeScyF7D0ljHXij1OQ5TbnAnYeo9GaLhDng&s',
+  'STÜPP': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTeScyF7D0ljHXij1OQ5TbnAnYeo9GaLhDng&s',
+  'CETA': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz5024Ef_TuoUCofDh1zBQyH6DuXrYV7l4ng&s',
 };
 
 export async function fetchLogos(): Promise<Record<string, string>> {
@@ -30,7 +35,9 @@ export async function fetchLogos(): Promise<Record<string, string>> {
   const localLogosRaw = localStorage.getItem('app_logos');
   const localLogos = localLogosRaw ? JSON.parse(localLogosRaw) : {};
   
-  return { ...DEFAULT_LOGOS, ...serverLogos, ...localLogos };
+  // DEFAULT_LOGOS contains the requested specific logos, they should have priority 
+  // or at least be merged in a way that the user's request is respected.
+  return { ...serverLogos, ...localLogos, ...DEFAULT_LOGOS };
 }
 
 export async function saveLogos(logos: Record<string, string>): Promise<void> {

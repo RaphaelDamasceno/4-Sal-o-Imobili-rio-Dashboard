@@ -97,14 +97,31 @@ const EntityIcon = ({ name, logos, type = 'default' }: { name: string, logos: Re
     const match = entries.find(([key]) => key.trim().toUpperCase() === normalizedName);
     if (match) return match[1];
     
-    // 4. Partial match (e.g. "MRV ENGENHARIA" matches "MRV")
-    if (normalizedName === 'MRV') {
-       const mrvMatch = entries.find(([key]) => key.toUpperCase().includes('MRV'));
+    // 4. Special normalization for MRV
+    if (normalizedName.includes('MRV')) {
+       // Search for ANY key that contains 'MRV' OR find a key that is just 'MRV'
+       const mrvMatch = entries.find(([key]) => {
+         const k = key.toUpperCase();
+         return k === 'MRV' || k === 'MRV ENGENHARIA';
+       });
        if (mrvMatch) return mrvMatch[1];
     }
+    
+    // 5. General partial match: check if logos contains a key that is within the name
+    // (e.g. name "CONSTRUTORA EXATA" matches key "EXATA")
+    const partialMatch = entries.find(([key]) => {
+      const k = key.trim().toUpperCase();
+      return k.length > 2 && normalizedName.includes(k);
+    });
+    if (partialMatch) return partialMatch[1];
 
     return null;
   }, [name, logos]);
+
+  // Reset error state if URL changes
+  useEffect(() => {
+    setImgError(false);
+  }, [url]);
 
   const iconColor = "text-brand-navy/30";
 
