@@ -451,9 +451,16 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [currentNotification, setCurrentNotification] = useState<Appointment | null>(null);
   const [viewMode, setViewMode] = useState<'dashboard' | 'ranking'>('dashboard');
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
   
   const lastSeenId = useRef<string | null>(null);
   const isInitialLoad = useRef(true);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const closeNotification = useCallback(() => {
     setCurrentNotification(null);
@@ -490,11 +497,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (isMobile) return;
     const cycleInterval = setInterval(() => {
       setViewMode(prev => prev === 'dashboard' ? 'ranking' : 'dashboard');
     }, 30000); // 30 seconds dashboard, 30 seconds ranking
     return () => clearInterval(cycleInterval);
-  }, []);
+  }, [isMobile]);
 
   const totalAppointments = appointments.length;
   const validatedAppointmentsCount = useMemo(() => 
@@ -660,7 +668,7 @@ export default function App() {
         <Settings size={20} />
       </button>
 
-      <div className="relative z-10 p-10 h-screen flex flex-col max-w-[1920px] mx-auto">
+      <div className={`relative z-10 p-4 lg:p-10 ${isMobile ? 'min-h-screen' : 'h-screen flex flex-col'} max-w-[1920px] mx-auto`}>
         
         {/* Header Row */}
         <div className="flex justify-between items-start mb-8">
@@ -703,325 +711,483 @@ export default function App() {
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          {viewMode === 'dashboard' ? (
-            <motion.div 
-              key="dashboard"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02 }}
-              transition={{ duration: 0.5 }}
-              className="flex-1 flex flex-col overflow-hidden"
-            >
-              {/* Dynamic Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 overflow-y-auto lg:overflow-hidden pb-4 custom-scrollbar-hidden">
-                
-                {/* Section: 1/3 - Latest Appointment */}
-                <div className="col-span-1 lg:col-span-4 h-auto lg:h-full overflow-hidden">
-                  <div className="feature-card p-6 lg:p-8 h-full flex flex-col bg-white relative min-h-[500px]">
-                    <CardHeading title="Recente" icon={ArrowUpRight} />
-                    
-                    <div className="flex-1 flex flex-col">
-                      {latestAppointment ? (
-                        <div className="flex-1 flex flex-col justify-center py-2">
-                          <motion.div 
-                            initial={{ opacity: 0, y: 15 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            key={latestAppointment.timestamp}
-                            className="space-y-6 lg:space-y-8"
-                          >
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              whileInView={{ opacity: 1, y: 0 }}
-                              viewport={{ once: true }}
-                              transition={{ delay: 0.1 }}
-                            >
-                              <p className="text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-green-text mb-2 font-sans">Cliente VIP</p>
-                              <h3 className="text-5xl lg:text-6xl font-black text-brand-navy leading-none font-display tracking-tight">{latestAppointment.clientName}</h3>
-                            </motion.div>
-        
-                            <div className="grid grid-cols-2 gap-6">
-                              <motion.div
-                                initial={{ opacity: 0, x: -10 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.2 }}
-                              >
-                                <p className="text-[12px] font-black uppercase tracking-widest text-brand-text-dim mb-2 font-sans">Corretor Responsável</p>
-                                <p className="text-xl lg:text-2xl font-bold text-brand-navy font-display">{latestAppointment.brokerName}</p>
-                              </motion.div>
-                              <motion.div
-                                initial={{ opacity: 0, x: 10 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.3 }}
-                              >
-                                <p className="text-[12px] font-black uppercase tracking-widest text-brand-text-dim mb-2 font-sans">Canal de Origem</p>
-                                <p className="text-xl lg:text-2xl font-bold text-brand-navy font-display">{latestAppointment.origin}</p>
-                              </motion.div>
-                            </div>
-        
+        {isMobile ? (
+          <div className="flex flex-col gap-8 pb-10">
+            {/* Dashboard View */}
+            <div className="flex flex-col gap-6">
+              <div className="feature-card p-6 bg-white relative">
+                <CardHeading title="Recente" icon={ArrowUpRight} />
+                {latestAppointment ? (
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-green-text mb-2 font-sans">Cliente VIP</p>
+                      <h3 className="text-4xl font-black text-brand-navy leading-none font-display tracking-tight">{latestAppointment.clientName}</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-text-dim mb-1 font-sans">Corretor</p>
+                        <p className="text-lg font-bold text-brand-navy font-display">{latestAppointment.brokerName}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-text-dim mb-1 font-sans">Canal</p>
+                        <p className="text-lg font-bold text-brand-navy font-display">{latestAppointment.origin}</p>
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-md bg-brand-bg border border-[#d1d5db] flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white flex items-center justify-center p-1 rounded-sm border border-[#d1d5db]">
+                        <EntityIcon name={latestAppointment.constructor} logos={logos} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-green-text mb-0.5 font-sans">Incorporadora</p>
+                        <p className="text-xl font-black text-brand-navy font-display leading-tight truncate">{latestAppointment.constructor}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-brand-navy/30 py-10 text-center font-bold uppercase tracking-widest font-sans">Aguardando dados...</p>
+                )}
+              </div>
+
+              <div className="feature-card p-6 bg-white">
+                <CardHeading title="Desempenho Geral" icon={Calendar} />
+                <div className="flex items-center justify-between gap-4">
+                   <div className="text-center">
+                      <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-brand-text-dim mb-1 font-sans">Total</p>
+                      <h1 className="text-5xl font-black tabular-nums text-brand-navy font-display">{totalAppointments}</h1>
+                   </div>
+                   <div className="w-px h-12 bg-brand-navy/10" />
+                   <div className="text-center">
+                      <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-brand-green-text mb-1 font-sans">Validados</p>
+                      <h1 className="text-5xl font-black tabular-nums text-brand-green font-display">{validatedAppointmentsCount}</h1>
+                   </div>
+                </div>
+              </div>
+
+              <div className="feature-card p-6 bg-white">
+                <CardHeading title="Engajamento Construtoras" icon={Building2} />
+                <div className="space-y-3">
+                  {constructorStats.map((item, idx) => (
+                    <ProgressBar 
+                      key={item.name} 
+                      label={item.name} 
+                      count={item.count} 
+                      percent={item.percent} 
+                      index={idx}
+                      logos={logos}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="feature-card p-6 bg-white">
+                <CardHeading title="Performance Regional" icon={Trophy} />
+                <div className="space-y-3">
+                  {superintendenceStats.map((item, idx) => (
+                    <RankingItem 
+                      key={item.name}
+                      rank={idx + 1}
+                      name={item.name}
+                      count={item.count}
+                      percent={item.percent}
+                      index={idx}
+                      logos={logos}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="feature-card p-6 bg-white">
+                <CardHeading title="Top Diretorias" icon={UserCheck} />
+                <div className="space-y-3">
+                  {boardStats.map((item, idx) => (
+                    <BoardRankingItem 
+                      key={item.name}
+                      item={item}
+                      idx={idx}
+                      maxCount={boardStats[0]?.count || 1}
+                      logos={logos}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Ranking View */}
+            <div className="flex flex-col gap-6">
+              <div className="feature-card p-6 bg-white">
+                <CardHeading title="Top 10 Corretores" icon={Medal} />
+                <div className="flex flex-col gap-2">
+                  {brokerTop10.map((item, idx) => (
+                    <div key={item.name} className={`flex items-center px-4 py-3 rounded-xl ${idx === 0 ? 'bg-brand-green/5' : 'bg-brand-bg'} border border-[#d1d5db]`}>
+                      <div className="w-10">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs ${
+                          idx === 0 ? 'bg-yellow-500 text-white' : 
+                          idx === 1 ? 'bg-slate-300 text-slate-700' : 
+                          idx === 2 ? 'bg-amber-700 text-white' : 'text-brand-navy/60 bg-white border border-[#d1d5db]'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                      </div>
+                      <div className="flex-1 font-bold text-brand-navy font-display truncate pr-2 text-lg">
+                        {item.name}
+                      </div>
+                      <div className="flex items-center justify-end gap-1 text-brand-navy">
+                        <span className="text-xl font-black font-display">{item.count}</span>
+                        <Crown className={`text-brand-green ${idx === 0 ? 'opacity-100' : 'opacity-0'}`} size={14} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="feature-card p-6 bg-white">
+                <CardHeading title="Top 10 Líderes" icon={Trophy} />
+                <div className="flex flex-col gap-2">
+                  {leaderTop10.map((item, idx) => (
+                    <div key={item.name} className={`flex items-center px-4 py-3 rounded-xl ${idx === 0 ? 'bg-brand-navy/5' : 'bg-brand-bg'} border border-[#d1d5db]`}>
+                      <div className="w-10">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs ${
+                          idx === 0 ? 'bg-brand-navy text-white' : 
+                          idx === 1 ? 'bg-brand-navy/70 text-white' : 
+                          idx === 2 ? 'bg-brand-navy/40 text-white' : 'text-brand-navy/60 bg-white border border-[#d1d5db]'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                      </div>
+                      <div className="flex-1 font-bold text-brand-navy font-display truncate pr-2 text-lg">
+                        {item.name}
+                      </div>
+                      <div className="flex items-center justify-end gap-1 text-brand-navy">
+                        <span className="text-xl font-black font-display">{item.count}</span>
+                        <Target className={`text-brand-green ${idx === 0 ? 'opacity-100' : 'opacity-0'}`} size={14} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {viewMode === 'dashboard' ? (
+              <motion.div 
+                key="dashboard"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                transition={{ duration: 0.5 }}
+                className="flex-1 flex flex-col overflow-hidden"
+              >
+                {/* Dynamic Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 overflow-y-auto lg:overflow-hidden pb-4 custom-scrollbar-hidden">
+                  
+                  {/* Section: 1/3 - Latest Appointment */}
+                  <div className="col-span-1 lg:col-span-4 h-auto lg:h-full overflow-hidden">
+                    <div className="feature-card p-6 lg:p-8 h-full flex flex-col bg-white relative min-h-[500px]">
+                      <CardHeading title="Recente" icon={ArrowUpRight} />
+                      
+                      <div className="flex-1 flex flex-col">
+                        {latestAppointment ? (
+                          <div className="flex-1 flex flex-col justify-center py-2">
                             <motion.div 
-                              initial={{ opacity: 0, y: 20 }}
+                              initial={{ opacity: 0, y: 15 }}
                               whileInView={{ opacity: 1, y: 0 }}
                               viewport={{ once: true }}
-                              transition={{ delay: 0.4 }}
-                              className="p-6 rounded-md bg-brand-bg border border-[#d1d5db] shadow-[inset_0_2px_4px_rgba(0,0,0,0.01)]"
+                              key={latestAppointment.timestamp}
+                              className="space-y-6 lg:space-y-8"
                             >
-                              <div className="flex items-center gap-4 lg:gap-6">
-                                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white flex items-center justify-center p-2 rounded-sm border border-[#d1d5db] shadow-sm">
-                                   <EntityIcon name={latestAppointment.constructor} logos={logos} />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-[12px] font-black uppercase tracking-widest text-brand-green-text mb-1.5 font-sans">Incorporadora</p>
-                                  <p className="text-2xl lg:text-4xl font-black text-brand-navy font-display leading-tight">{latestAppointment.constructor}</p>
-                                </div>
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.1 }}
+                              >
+                                <p className="text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-green-text mb-2 font-sans">Cliente VIP</p>
+                                <h3 className="text-5xl lg:text-6xl font-black text-brand-navy leading-none font-display tracking-tight">{latestAppointment.clientName}</h3>
+                              </motion.div>
+          
+                              <div className="grid grid-cols-2 gap-6">
+                                <motion.div
+                                  initial={{ opacity: 0, x: -10 }}
+                                  whileInView={{ opacity: 1, x: 0 }}
+                                  viewport={{ once: true }}
+                                  transition={{ delay: 0.2 }}
+                                >
+                                  <p className="text-[12px] font-black uppercase tracking-widest text-brand-text-dim mb-2 font-sans">Corretor Responsável</p>
+                                  <p className="text-xl lg:text-2xl font-bold text-brand-navy font-display">{latestAppointment.brokerName}</p>
+                                </motion.div>
+                                <motion.div
+                                  initial={{ opacity: 0, x: 10 }}
+                                  whileInView={{ opacity: 1, x: 0 }}
+                                  viewport={{ once: true }}
+                                  transition={{ delay: 0.3 }}
+                                >
+                                  <p className="text-[12px] font-black uppercase tracking-widest text-brand-text-dim mb-2 font-sans">Canal de Origem</p>
+                                  <p className="text-xl lg:text-2xl font-bold text-brand-navy font-display">{latestAppointment.origin}</p>
+                                </motion.div>
                               </div>
+          
+                              <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.4 }}
+                                className="p-6 rounded-md bg-brand-bg border border-[#d1d5db] shadow-[inset_0_2px_4px_rgba(0,0,0,0.01)]"
+                              >
+                                <div className="flex items-center gap-4 lg:gap-6">
+                                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white flex items-center justify-center p-2 rounded-sm border border-[#d1d5db] shadow-sm">
+                                     <EntityIcon name={latestAppointment.constructor} logos={logos} />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-[12px] font-black uppercase tracking-widest text-brand-green-text mb-1.5 font-sans">Incorporadora</p>
+                                    <p className="text-2xl lg:text-4xl font-black text-brand-navy font-display leading-tight">{latestAppointment.constructor}</p>
+                                  </div>
+                                </div>
+                              </motion.div>
                             </motion.div>
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex items-center justify-center text-brand-navy/10">
+                            <p className="font-bold uppercase tracking-widest font-sans">Aguardando dados...</p>
+                          </div>
+                        )}
+          
+                        <div className="mt-auto pt-6 border-t border-[#d1d5db] flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
+                            <span className="text-[12px] font-black uppercase tracking-widest text-brand-text-dim font-sans">Tempo Real</span>
+                          </div>
+                          <motion.p 
+                            initial={{ opacity: 0, scale: 0.5 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ type: "spring", stiffness: 200, delay: 0.5 }}
+                            className="text-2xl lg:text-4xl font-black text-brand-navy/30 font-display"
+                          >
+                            #{totalAppointments}
+                          </motion.p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+  
+                  {/* Section: 2/3 - Indicators Grid */}
+                  <div className="col-span-1 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8 h-auto lg:h-full">
+                    
+                    {/* 1. Total Appointments Card */}
+                    <div className="feature-card p-6 lg:p-8 flex flex-col bg-white group transition-all duration-500 min-h-[250px] hover:border-brand-navy/10 overflow-hidden">
+                      <CardHeading title="Desempenho Geral" icon={Calendar} />
+                      <div className="flex-1 flex items-center justify-around gap-4">
+                         
+                         <div className="flex flex-col items-center">
+                            <motion.p 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.2 }}
+                              className="text-[12px] lg:text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-text-dim mb-2 font-sans text-center"
+                            >
+                              Total
+                            </motion.p>
+                            <motion.h1 
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+                              className="text-6xl lg:text-8xl font-black tracking-tighter tabular-nums text-brand-navy font-display"
+                            >
+                              {totalAppointments.toLocaleString('pt-BR')}
+                            </motion.h1>
+                         </div>
+  
+                         <div className="w-px h-24 bg-brand-navy/10" />
+  
+                         <div className="flex flex-col items-center">
+                            <motion.p 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.4 }}
+                              className="text-[12px] lg:text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-green-text mb-2 font-sans text-center"
+                            >
+                              Validados
+                            </motion.p>
+                            <motion.h1 
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                              className="text-6xl lg:text-8xl font-black tracking-tighter tabular-nums text-brand-green font-display"
+                            >
+                              {validatedAppointmentsCount.toLocaleString('pt-BR')}
+                            </motion.h1>
+                         </div>
+  
+                      </div>
+                    </div>
+  
+                    {/* 2. Ranking Construtoras */}
+                    <div className="feature-card p-4 lg:p-6 flex flex-col bg-white min-h-[250px] transition-all duration-300 hover:border-brand-navy/20 hover:shadow-xl overflow-hidden">
+                      <CardHeading title="Engajamento Construtoras" icon={Building2} />
+                      <div className="space-y-2 lg:space-y-3 flex-1 overflow-hidden flex flex-col justify-center max-h-[280px]">
+                        {constructorStats.slice(0, 3).map((item, idx) => (
+                          <ProgressBar 
+                            key={item.name} 
+                            label={item.name} 
+                            count={item.count} 
+                            percent={item.percent} 
+                            index={idx}
+                            logos={logos}
+                          />
+                        ))}
+                      </div>
+                    </div>
+  
+                    {/* 3. Ranking Superintendências */}
+                    <div className="feature-card p-4 lg:p-6 flex flex-col bg-white min-h-[250px] transition-all duration-300 hover:border-brand-navy/20 hover:shadow-xl overflow-hidden">
+                      <CardHeading title="Performance Regional" icon={Trophy} />
+                      <div className="space-y-2 lg:space-y-3 flex-1 overflow-hidden flex flex-col justify-center max-h-[280px]">
+                        {superintendenceStats.slice(0, 3).map((item, idx) => (
+                          <RankingItem 
+                            key={item.name}
+                            rank={idx + 1}
+                            name={item.name}
+                            count={item.count}
+                            percent={item.percent}
+                            index={idx}
+                            logos={logos}
+                          />
+                        ))}
+                      </div>
+                    </div>
+  
+                    {/* 4. Ranking Diretorias */}
+                    <div className="feature-card p-4 lg:p-6 flex flex-col bg-white min-h-[250px] transition-all duration-300 hover:border-brand-navy/20 hover:shadow-xl overflow-hidden">
+                      <CardHeading title="Melhores Diretorias" icon={UserCheck} />
+                      <div className="space-y-2 lg:space-y-3 flex-1 overflow-hidden flex flex-col justify-center max-h-[280px]">
+                        {boardStats.slice(0, 3).map((item, idx) => (
+                          <BoardRankingItem 
+                            key={item.name}
+                            item={item}
+                            idx={idx}
+                            maxCount={boardStats[0]?.count || 1}
+                            logos={logos}
+                          />
+                        ))}
+                      </div>
+                    </div>
+  
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="ranking"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                transition={{ duration: 0.5 }}
+                className="flex-1 flex flex-col overflow-hidden"
+              >
+                <div className="grid grid-cols-2 gap-10 flex-1 overflow-hidden">
+                  {/* Ranking Corretores */}
+                  <div className="feature-card h-full flex flex-col bg-white overflow-hidden p-8">
+                    <div className="flex items-center justify-between mb-8">
+                      <CardHeading title="Top 10 Corretores" icon={Medal} />
+                      <div className="flex items-center gap-2 px-3 py-1 bg-brand-green/10 text-brand-green rounded-full">
+                         <Target size={14} className="animate-pulse" />
+                         <span className="text-[10px] font-black uppercase tracking-widest">Tempo Real</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      {/* Header Row */}
+                      <div className="flex items-center px-4 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-dim font-sans">
+                        <div className="w-12">Pos</div>
+                        <div className="flex-1">Corretor</div>
+                        <div className="w-32 text-right">Agendamentos</div>
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col gap-2 pb-2">
+                        {brokerTop10.map((item, idx) => (
+                          <motion.div 
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.04 }}
+                            key={item.name} 
+                            className={`flex-1 flex items-center px-4 rounded-xl group ${idx === 0 ? 'bg-brand-green/5' : 'bg-brand-bg'} hover:bg-brand-navy/5 transition-colors border border-transparent hover:border-brand-navy/5`}
+                          >
+                             <div className="w-12">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${
+                                  idx === 0 ? 'bg-yellow-500 text-white' : 
+                                  idx === 1 ? 'bg-slate-300 text-slate-700' : 
+                                  idx === 2 ? 'bg-amber-700 text-white' : 'text-brand-navy/60 bg-white border border-[#d1d5db]'
+                                }`}>
+                                  {idx + 1}
+                                </div>
+                             </div>
+                             <div className="flex-1 font-bold text-brand-navy text-lg lg:text-xl font-display truncate pr-4">
+                                {item.name}
+                             </div>
+                             <div className="w-32 flex items-center justify-end gap-2 text-brand-navy">
+                                <span className="text-2xl lg:text-3xl font-black font-display">{item.count}</span>
+                                <Crown className={`text-brand-green opacity-0 group-hover:opacity-100 transition-opacity ${idx === 0 ? 'opacity-100' : ''}`} size={16} />
+                             </div>
                           </motion.div>
-                        </div>
-                      ) : (
-                        <div className="flex-1 flex items-center justify-center text-brand-navy/10">
-                          <p className="font-bold uppercase tracking-widest font-sans">Aguardando dados...</p>
-                        </div>
-                      )}
-        
-                      <div className="mt-auto pt-6 border-t border-[#d1d5db] flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
-                          <span className="text-[12px] font-black uppercase tracking-widest text-brand-text-dim font-sans">Tempo Real</span>
-                        </div>
-                        <motion.p 
-                          initial={{ opacity: 0, scale: 0.5 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ type: "spring", stiffness: 200, delay: 0.5 }}
-                          className="text-2xl lg:text-4xl font-black text-brand-navy/30 font-display"
-                        >
-                          #{totalAppointments}
-                        </motion.p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+  
+                  {/* Ranking Líderes */}
+                  <div className="feature-card h-full flex flex-col bg-white overflow-hidden p-8">
+                    <div className="flex items-center justify-between mb-8">
+                      <CardHeading title="Top 10 Líderes" icon={Trophy} />
+                      <div className="flex items-center gap-2 px-3 py-1 bg-brand-navy/5 text-brand-navy/40 rounded-full">
+                         <Target size={14} />
+                         <span className="text-[10px] font-black uppercase tracking-widest">Geral</span>
+                      </div>
+                    </div>
+  
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      {/* Header Row */}
+                      <div className="flex items-center px-4 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-dim font-sans">
+                        <div className="w-12">Pos</div>
+                        <div className="flex-1">Líder</div>
+                        <div className="w-32 text-right">Volume</div>
+                      </div>
+  
+                      <div className="flex-1 flex flex-col gap-2 pb-2">
+                        {leaderTop10.map((item, idx) => (
+                          <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.04 }}
+                            key={item.name} 
+                            className={`flex-1 flex items-center px-4 rounded-xl group ${idx === 0 ? 'bg-brand-navy/5' : 'bg-brand-bg'} hover:bg-brand-green/5 transition-colors border border-transparent hover:border-brand-green/5`}
+                          >
+                             <div className="w-12">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${
+                                  idx === 0 ? 'bg-brand-navy text-white' : 
+                                  idx === 1 ? 'bg-brand-navy/70 text-white' : 
+                                  idx === 2 ? 'bg-brand-navy/40 text-white' : 'text-brand-navy/60 bg-white border border-[#d1d5db]'
+                                }`}>
+                                  {idx + 1}
+                                </div>
+                             </div>
+                             <div className="flex-1 font-bold text-brand-navy text-lg lg:text-xl font-display truncate pr-4">
+                                {item.name}
+                             </div>
+                             <div className="w-32 flex items-center justify-end gap-2 text-brand-navy">
+                                <span className="text-2xl lg:text-3xl font-black font-display">{item.count}</span>
+                                <Target className={`text-brand-green opacity-0 group-hover:opacity-100 transition-opacity ${idx === 0 ? 'opacity-100' : ''}`} size={16} />
+                             </div>
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Section: 2/3 - Indicators Grid */}
-                <div className="col-span-1 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8 h-auto lg:h-full">
-                  
-                  {/* 1. Total Appointments Card */}
-                  <div className="feature-card p-6 lg:p-8 flex flex-col bg-white group transition-all duration-500 min-h-[250px] hover:border-brand-navy/10 overflow-hidden">
-                    <CardHeading title="Desempenho Geral" icon={Calendar} />
-                    <div className="flex-1 flex items-center justify-around gap-4">
-                       
-                       <div className="flex flex-col items-center">
-                          <motion.p 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="text-[12px] lg:text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-text-dim mb-2 font-sans text-center"
-                          >
-                            Total
-                          </motion.p>
-                          <motion.h1 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-                            className="text-6xl lg:text-8xl font-black tracking-tighter tabular-nums text-brand-navy font-display"
-                          >
-                            {totalAppointments.toLocaleString('pt-BR')}
-                          </motion.h1>
-                       </div>
-
-                       <div className="w-px h-24 bg-brand-navy/10" />
-
-                       <div className="flex flex-col items-center">
-                          <motion.p 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="text-[12px] lg:text-[14px] font-extrabold uppercase tracking-[0.3em] text-brand-green-text mb-2 font-sans text-center"
-                          >
-                            Validados
-                          </motion.p>
-                          <motion.h1 
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                            className="text-6xl lg:text-8xl font-black tracking-tighter tabular-nums text-brand-green font-display"
-                          >
-                            {validatedAppointmentsCount.toLocaleString('pt-BR')}
-                          </motion.h1>
-                       </div>
-
-                    </div>
-                  </div>
-
-                  {/* 2. Ranking Construtoras */}
-                  <div className="feature-card p-4 lg:p-6 flex flex-col bg-white min-h-[250px] transition-all duration-300 hover:border-brand-navy/20 hover:shadow-xl overflow-hidden">
-                    <CardHeading title="Engajamento Construtoras" icon={Building2} />
-                    <div className="space-y-2 lg:space-y-3 flex-1 overflow-hidden flex flex-col justify-center max-h-[280px]">
-                      {constructorStats.slice(0, 3).map((item, idx) => (
-                        <ProgressBar 
-                          key={item.name} 
-                          label={item.name} 
-                          count={item.count} 
-                          percent={item.percent} 
-                          index={idx}
-                          logos={logos}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 3. Ranking Superintendências */}
-                  <div className="feature-card p-4 lg:p-6 flex flex-col bg-white min-h-[250px] transition-all duration-300 hover:border-brand-navy/20 hover:shadow-xl overflow-hidden">
-                    <CardHeading title="Performance Regional" icon={Trophy} />
-                    <div className="space-y-2 lg:space-y-3 flex-1 overflow-hidden flex flex-col justify-center max-h-[280px]">
-                      {superintendenceStats.slice(0, 3).map((item, idx) => (
-                        <RankingItem 
-                          key={item.name}
-                          rank={idx + 1}
-                          name={item.name}
-                          count={item.count}
-                          percent={item.percent}
-                          index={idx}
-                          logos={logos}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 4. Ranking Diretorias */}
-                  <div className="feature-card p-4 lg:p-6 flex flex-col bg-white min-h-[250px] transition-all duration-300 hover:border-brand-navy/20 hover:shadow-xl overflow-hidden">
-                    <CardHeading title="Melhores Diretorias" icon={UserCheck} />
-                    <div className="space-y-2 lg:space-y-3 flex-1 overflow-hidden flex flex-col justify-center max-h-[280px]">
-                      {boardStats.slice(0, 3).map((item, idx) => (
-                        <BoardRankingItem 
-                          key={item.name}
-                          item={item}
-                          idx={idx}
-                          maxCount={boardStats[0]?.count || 1}
-                          logos={logos}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="ranking"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02 }}
-              transition={{ duration: 0.5 }}
-              className="flex-1 flex flex-col overflow-hidden"
-            >
-              <div className="grid grid-cols-2 gap-10 flex-1 overflow-hidden">
-                {/* Ranking Corretores */}
-                <div className="feature-card h-full flex flex-col bg-white overflow-hidden p-8">
-                  <div className="flex items-center justify-between mb-8">
-                    <CardHeading title="Top 10 Corretores" icon={Medal} />
-                    <div className="flex items-center gap-2 px-3 py-1 bg-brand-green/10 text-brand-green rounded-full">
-                       <Target size={14} className="animate-pulse" />
-                       <span className="text-[10px] font-black uppercase tracking-widest">Tempo Real</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col overflow-hidden">
-                    {/* Header Row */}
-                    <div className="flex items-center px-4 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-dim font-sans">
-                      <div className="w-12">Pos</div>
-                      <div className="flex-1">Corretor</div>
-                      <div className="w-32 text-right">Agendamentos</div>
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col gap-2 pb-2">
-                      {brokerTop10.map((item, idx) => (
-                        <motion.div 
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.04 }}
-                          key={item.name} 
-                          className={`flex-1 flex items-center px-4 rounded-xl group ${idx === 0 ? 'bg-brand-green/5' : 'bg-brand-bg'} hover:bg-brand-navy/5 transition-colors border border-transparent hover:border-brand-navy/5`}
-                        >
-                           <div className="w-12">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${
-                                idx === 0 ? 'bg-yellow-500 text-white' : 
-                                idx === 1 ? 'bg-slate-300 text-slate-700' : 
-                                idx === 2 ? 'bg-amber-700 text-white' : 'text-brand-navy/60 bg-white border border-[#d1d5db]'
-                              }`}>
-                                {idx + 1}
-                              </div>
-                           </div>
-                           <div className="flex-1 font-bold text-brand-navy text-lg lg:text-xl font-display truncate pr-4">
-                              {item.name}
-                           </div>
-                           <div className="w-32 flex items-center justify-end gap-2 text-brand-navy">
-                              <span className="text-2xl lg:text-3xl font-black font-display">{item.count}</span>
-                              <Crown className={`text-brand-green opacity-0 group-hover:opacity-100 transition-opacity ${idx === 0 ? 'opacity-100' : ''}`} size={16} />
-                           </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ranking Líderes */}
-                <div className="feature-card h-full flex flex-col bg-white overflow-hidden p-8">
-                  <div className="flex items-center justify-between mb-8">
-                    <CardHeading title="Top 10 Líderes" icon={Trophy} />
-                    <div className="flex items-center gap-2 px-3 py-1 bg-brand-navy/5 text-brand-navy/40 rounded-full">
-                       <Target size={14} />
-                       <span className="text-[10px] font-black uppercase tracking-widest">Alta Métrica</span>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col overflow-hidden">
-                    {/* Header Row */}
-                    <div className="flex items-center px-4 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-dim font-sans">
-                      <div className="w-12">Pos</div>
-                      <div className="flex-1">Líder</div>
-                      <div className="w-32 text-right">Volume</div>
-                    </div>
-
-                    <div className="flex-1 flex flex-col gap-2 pb-2">
-                      {leaderTop10.map((item, idx) => (
-                        <motion.div 
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.04 }}
-                          key={item.name} 
-                          className={`flex-1 flex items-center px-4 rounded-xl group ${idx === 0 ? 'bg-brand-navy/5' : 'bg-brand-bg'} hover:bg-brand-green/5 transition-colors border border-transparent hover:border-brand-green/5`}
-                        >
-                           <div className="w-12">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${
-                                idx === 0 ? 'bg-brand-navy text-white' : 
-                                idx === 1 ? 'bg-brand-navy/70 text-white' : 
-                                idx === 2 ? 'bg-brand-navy/40 text-white' : 'text-brand-navy/60 bg-white border border-[#d1d5db]'
-                              }`}>
-                                {idx + 1}
-                              </div>
-                           </div>
-                           <div className="flex-1 font-bold text-brand-navy text-lg lg:text-xl font-display truncate pr-4">
-                              {item.name}
-                           </div>
-                           <div className="w-32 flex items-center justify-end gap-2 text-brand-navy">
-                              <span className="text-2xl lg:text-3xl font-black font-display">{item.count}</span>
-                              <Target className={`text-brand-green opacity-0 group-hover:opacity-100 transition-opacity ${idx === 0 ? 'opacity-100' : ''}`} size={16} />
-                           </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
 
       </div>
     </div>
