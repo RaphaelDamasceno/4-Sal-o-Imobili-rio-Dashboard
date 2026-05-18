@@ -1,5 +1,16 @@
 import axios from 'axios';
 
+const DEFAULT_LOGOS: Record<string, string> = {
+  'MRV': 'https://maraalcaineimoveis.com.br/wp-content/uploads/2021/09/mrv-engenharia-sao-jose-do-rio-preto-sp.jpg',
+  'DUE': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQ9GpiqTnifLKZxk3yI4LhNJONEPZHmHwXuA&s',
+  'EXATA': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT25r5a8xJrC4VfwoiSKsFixyd3MBm2osygcQ&s',
+  'VL': 'https://media.glassdoor.com/sqll/2710128/vl-construtora-squarelogo-1643286816827.png',
+  'CASA ORANGE': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSkrPnozAaQ7lTjwZ9PwyLUf9OSNUAEhN5oKQ&s',
+  'BORA': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6OrgSsvn6YW82tjdVao5s_I-2YqPhNEK8OA&s',
+  'MRV ENGENHARIA': 'https://maraalcaineimoveis.com.br/wp-content/uploads/2021/09/mrv-engenharia-sao-jose-do-rio-preto-sp.jpg',
+  'VL CONSTRUTORA': 'https://media.glassdoor.com/sqll/2710128/vl-construtora-squarelogo-1643286816827.png',
+};
+
 export async function fetchLogos(): Promise<Record<string, string>> {
   let serverLogos = {};
   try {
@@ -19,7 +30,7 @@ export async function fetchLogos(): Promise<Record<string, string>> {
   const localLogosRaw = localStorage.getItem('app_logos');
   const localLogos = localLogosRaw ? JSON.parse(localLogosRaw) : {};
   
-  return { ...serverLogos, ...localLogos };
+  return { ...DEFAULT_LOGOS, ...serverLogos, ...localLogos };
 }
 
 export async function saveLogos(logos: Record<string, string>): Promise<void> {
